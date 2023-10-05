@@ -33,6 +33,11 @@ faces_arr = [faces.ohad_suprised,
 
 
 def connect_DB():  # add an option to user login an admin login!
+    """
+    Connect to MongoDB database with visitor privileges
+
+    :return: MongoDB client, MongoDB 'timeline' database and MongoDB 'events' collection
+    """
     uri = "mongodb+srv://visitor:YIuwTDgfNygklz0X@cluster0.uhhf5bq.mongodb.net/?retryWrites=true&w=majority"
 
     # Create a new client and connect to the server
@@ -62,7 +67,8 @@ def connect_DB():  # add an option to user login an admin login!
                 print(f"collection '{mycol.name}' not found!")
                 processes = multiprocessing.active_children()
                 for process in processes:
-                    process.kill()
+                    process.terminate()
+                    process.join()
                 sg.popup("collection not found!\n     Exiting...",
                          button_type=5,  # no buttons!
                          no_titlebar=True,
@@ -77,7 +83,8 @@ def connect_DB():  # add an option to user login an admin login!
             print(f"database '{mydb.name}' not found!")
             processes = multiprocessing.active_children()
             for process in processes:
-                process.kill()
+                process.terminate()
+                process.join()
             sg.popup("Database not found!\n          Exiting...",
                      button_type=5,  # no buttons!
                      no_titlebar=True,
@@ -92,11 +99,29 @@ def connect_DB():  # add an option to user login an admin login!
 
         return myclient, mydb, mycol
     except Exception as e:
+        processes = multiprocessing.active_children()
+        for process in processes:
+            process.terminate()
+            process.join()
         print(e)
+        sg.popup("Could not ping!\n          Exiting...",
+                 button_type=5,  # no buttons!
+                 no_titlebar=True,
+                 auto_close=True,
+                 auto_close_duration=2,
+                 background_color='red',
+                 # non_blocking=True,
+                 font=('any', 20, 'bold'),
+                 text_color='black')
         exit()
 
 
 def get_creation_and_modification_dates(file_path):
+    """
+    Gets the creation and modification date of a file
+    :param file_path: PATH to file
+    :return: tuple of creation date and modification date. If encountered an error, it will be return.
+    """
     try:
         stat_info = os.stat(file_path)
         creation_timestamp = stat_info.st_ctime
@@ -114,9 +139,9 @@ def massupload(folder_path, collection):
     """
     INTERNAL USE!!
 
-    mass upload of photos from the
-    :param folder_path:
-    :param collection:
+    mass upload of photos from the 'folder_path' directory
+    :param folder_path: PATH
+    :param collection:  MongoDB collection
     :return:
     """
 
